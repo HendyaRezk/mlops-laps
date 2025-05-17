@@ -1,0 +1,42 @@
+stages:
+  preprocess:
+    cmd: python src/data/preprocess_data.py
+    wdir: .
+    deps:
+      - src/data/preprocess_data.py
+      - data/raw/train.csv
+    outs:
+      - data/interim/feature_Eng_data.csv
+      - data/processed/X_train.csv
+      - data/processed/y_train.csv
+      - data/processed/preprocessor.pkl
+    params:
+      - config.data
+
+  train:
+    cmd: python src/model/train_model.py
+    wdir: .
+    deps:
+      - src/model/train_model.py
+      - data/processed/X_train.csv
+      - data/processed/y_train.csv
+      - data/processed/preprocessor.pkl
+    outs:
+      - src/model/model_only.pkl
+      - src/model/full_pipeline_model.pkl
+    params:
+      - config.model
+
+  evaluate:
+    cmd: python src/evaluate.py
+    wdir: .
+    deps:
+      - src/evaluate.py
+      - src/model/full_pipeline_model.pkl
+      - data/raw/X_test.csv
+      - data/raw/y_test.csv
+    metrics:
+      - reports/metrics.json:
+          cache: false
+    params:
+      - config.evaluation
