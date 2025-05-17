@@ -1,32 +1,19 @@
-import subprocess
+import sys
+import os
+import hydra
+from omegaconf import DictConfig
 
-def run_preprocessing():
-    result = subprocess.run(["python", "/teamspace/studios/this_studio/mlops/src/data/preprocess_data.py"], capture_output=True, text=True)
-    print(result.stdout)
-    if result.returncode != 0:
-        print("Preprocessing failed:")
-        print(result.stderr)
-        exit(1)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-def run_training():
-    result = subprocess.run(["python", "/teamspace/studios/this_studio/mlops/src/model/train_model.py"], capture_output=True, text=True)
-    print(result.stdout)
-    if result.returncode != 0:
-        print("Model training failed:")
-        print(result.stderr)
-        exit(1)
+from src.data.preprocess_data import preprocess_data
+from src.model.train_model import train_model
+from src.evaluate import evaluate
 
-def run_evaluation():
-    result = subprocess.run(["python", "/teamspace/studios/this_studio/mlops/src/evaluate.py"], capture_output=True, text=True)
-    print(result.stdout)
-    if result.returncode != 0:
-        print("Evaluation failed:")
-        print(result.stderr)
-        exit(1)
-    print("Evaluation complete.\n")
+@hydra.main(config_path="../conf", config_name="config", version_base="1.1")
+def main(cfg: DictConfig):  
+    preprocess_data(cfg)  
+    train_model(cfg)  
+    evaluate(cfg)  
 
 if __name__ == "__main__":
-    run_preprocessing()
-    run_training()
-    run_evaluation()
-    print("steps completed")
+    main()

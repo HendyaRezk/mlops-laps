@@ -4,40 +4,44 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
-BASE_PATH = r"/teamspace/studios/this_studio/mlops/data/processed"
-X_TRAIN_CSV = f"{BASE_PATH}/X_train.csv"
-Y_TRAIN_CSV = f"{BASE_PATH}/y_train.csv"
-PREPROCESSOR_PKL = f"{BASE_PATH}/preprocessor.pkl"
+def train_model(cfg):
+    X_train_path = cfg.data.x_train_path 
+    y_train_path = cfg.data.y_train_path
+    
+    X_train = pd.read_csv(X_train_path)
+    y_train = pd.read_csv(y_train_path).values.ravel()
 
-MODEL_ONLY_PATH = r"/teamspace/studios/this_studio/mlops/src/model/model_only.pkl"
-COMBINED_MODEL_PATH = r"/teamspace/studios/this_studio/mlops/src/model/full_pipeline_model.pkl"
+    model_params = cfg.model.random_forest
 
-X_train = pd.read_csv(X_TRAIN_CSV)
-y_train = pd.read_csv(Y_TRAIN_CSV).values.ravel()
+    model_pipeline = Pipeline(steps=[
+        ('clf', RandomForestClassifier(
+            n_estimators=model_params.n_estimators,
+            max_depth=model_params.max_depth,
+            min_samples_split=model_params.min_samples_split,
+            random_state=42
+        ))
+    ])
 
-preprocessor = joblib.load(PREPROCESSOR_PKL)
+    param_grid = {
+        'clf__n_estimators': [100, 200],
+        'clf__max_depth': [None, 5, 10],
+        'clf__min_samples_split': [2, 5],
+    }
 
-model_pipeline = Pipeline(steps=[
-    ('clf', RandomForestClassifier(random_state=42))
-])
+    grid_search = GridSearchCV(model_pipeline, param_grid, cv=5, scoring='accuracy', n_jobs=-1, verbose=1)
+    grid_search.fit(X_train, y_train)
 
-param_grid = {
-    'clf__n_estimators': [100, 200],
-    'clf__max_depth': [None, 5, 10],
-    'clf__min_samples_split': [2, 5],
-}
+    model_only_path = cfg.model.model_only_path
+    combined_model_path = cfg.model.combined_model_path
 
-grid_search = GridSearchCV(model_pipeline, param_grid, cv=5, scoring='accuracy', n_jobs=-1, verbose=1)
-grid_search.fit(X_train, y_train)
+    joblib.dump(grid_search.best_estimator_, model_only_path)
 
-joblib.dump(grid_search.best_estimator_, MODEL_ONLY_PATH)
+    full_pipeline = Pipeline(steps=[
+        ('preprocessor', joblib.load(cfg.data.preprocessor_pkl)),
+        ('clf', grid_search.best_estimator_.named_steps['clf'])
+    ])
+    joblib.dump(full_pipeline, combined_model_path)
 
-full_pipeline = Pipeline(steps=[
-    ('preprocessor', preprocessor),
-    ('clf', grid_search.best_estimator_.named_steps['clf'])  
-])
-
-joblib.dump(full_pipeline, COMBINED_MODEL_PATH)
-
-print("Best Params:", grid_search.best_params_)
-print("Best CV Score:", grid_search.best_score_)
+    print("Training complete.")
+    print("Best Params:", grid_search.best_params_)
+    print("Best CV Score:", grid_search.best_score_)

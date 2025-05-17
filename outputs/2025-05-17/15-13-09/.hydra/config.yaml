@@ -1,0 +1,19 @@
+data:
+  raw_data:
+    raw_path: /teamspace/studios/this_studio/mlops/data/raw/train.csv
+    interim_path: /teamspace/studios/this_studio/mlops/data/interim/feature_Eng_data.csv
+    processed_path: /teamspace/studios/this_studio/mlops/data/processed
+    x_test_path: /teamspace/studios/this_studio/mlops/data/raw/X_test.csv
+    y_test_path: /teamspace/studios/this_studio/mlops/data/raw/y_test.csv
+model:
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    min_samples_split: 5
+  combined_model_path: /teamspace/studios/this_studio/mlops/src/model/full_pipeline_model.pkl
+evaluation:
+  metrics:
+  - accuracy
+  - precision
+  - recall
+  - f1
