@@ -1,0 +1,114 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python src/data/preprocess_data.py
+    deps:
+    - path: data/raw/train.csv
+      hash: md5
+      md5: 2309cc5f04782ed9bb6016d9f4e381cf
+      size: 61194
+      isexec: true
+    - path: src/data/preprocess_data.py
+      hash: md5
+      md5: fd33864b32c1eba084cae9bf7eed2893
+      size: 3101
+      isexec: true
+    params:
+      params.yaml:
+        config.data:
+          raw_path: data/raw/train.csv
+          interim_path: data/interim/feature_Eng_data.csv
+          processed_path: data/processed
+          x_test_path: data/raw/X_test.csv
+          y_test_path: data/raw/y_test.csv
+          preprocessor_pkl: data/processed/preprocessor.pkl
+    outs:
+    - path: data/interim/feature_Eng_data.csv
+      hash: md5
+      md5: 4714ca2862e09af1de1b70d1ba0fbc12
+      size: 30153
+    - path: data/processed/X_train.csv
+      hash: md5
+      md5: d2a7de6defc36e60215293dd8e436fff
+      size: 77115
+    - path: data/processed/preprocessor.pkl
+      hash: md5
+      md5: d840c8a2e21a36d8a619b408ab16758c
+      size: 4164
+    - path: data/processed/y_train.csv
+      hash: md5
+      md5: 1bbe9ea4a99323d5d8e4d64a560cc322
+      size: 1433
+  train:
+    cmd: python src/model/train_model.py
+    deps:
+    - path: data/processed/X_train.csv
+      hash: md5
+      md5: d2a7de6defc36e60215293dd8e436fff
+      size: 77115
+    - path: data/processed/preprocessor.pkl
+      hash: md5
+      md5: d840c8a2e21a36d8a619b408ab16758c
+      size: 4164
+    - path: data/processed/y_train.csv
+      hash: md5
+      md5: 1bbe9ea4a99323d5d8e4d64a560cc322
+      size: 1433
+    - path: src/model/train_model.py
+      hash: md5
+      md5: 36a51573308a3483fd797722637940fb
+      size: 2358
+      isexec: true
+    params:
+      params.yaml:
+        config.model:
+          random_forest:
+            n_estimators: 100
+            max_depth: 10
+            min_samples_split: 5
+          model_only_path: src/model/model_only.pkl
+          combined_model_path: src/model/full_pipeline_model.pkl
+    outs:
+    - path: src/model/full_pipeline_model.pkl
+      hash: md5
+      md5: ed8eac076e27a683f1aa58506105a072
+      size: 835448
+    - path: src/model/model_only.pkl
+      hash: md5
+      md5: bf836a1ecf4a6fb836176ac67cff9841
+      size: 811999
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - path: data/raw/X_test.csv
+      hash: md5
+      md5: b42277b75bd7c89a9b610993d835b2b7
+      size: 5786
+      isexec: true
+    - path: data/raw/y_test.csv
+      hash: md5
+      md5: 9013c44486e369a63ca7226075a95692
+      size: 367
+      isexec: true
+    - path: src/evaluate.py
+      hash: md5
+      md5: 1af93f00738282737fdf44e35d4a253e
+      size: 1746
+      isexec: true
+    - path: src/model/full_pipeline_model.pkl
+      hash: md5
+      md5: ed8eac076e27a683f1aa58506105a072
+      size: 835448
+    params:
+      params.yaml:
+        config.evaluation:
+          metrics:
+          - accuracy
+          - precision
+          - recall
+          - f1
+    outs:
+    - path: reports/metrics.json
+      hash: md5
+      md5: 074b9313e7102208acc8ba60a4d54d11
+      size: 131
