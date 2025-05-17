@@ -1,0 +1,22 @@
+data:
+  raw_path: data/raw/train.csv
+  interim_path: data/interim/feature_Eng_data.csv
+  processed_path: data/processed
+  x_train_path: data/processed/X_train.csv
+  y_train_path: data/processed/y_train.csv
+  x_test_path: data/raw/X_test.csv
+  y_test_path: data/raw/y_test.csv
+  preprocessor_pkl: data/processed/preprocessor.pkl
+model:
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    min_samples_split: 5
+  model_only_path: src/model/model_only.pkl
+  combined_model_path: src/model/full_pipeline_model.pkl
+evaluation:
+  metrics:
+  - accuracy
+  - precision
+  - recall
+  - f1

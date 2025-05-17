@@ -1,11 +1,14 @@
 import pandas as pd
 import numpy as np
 import joblib
+import os
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
+import hydra
+from omegaconf import DictConfig
 
 def feature_engineering(df):
     df = df.copy()
@@ -19,52 +22,57 @@ def feature_engineering(df):
     df.drop(columns=['Name', 'Ticket', 'Cabin', 'PassengerId'], inplace=True)
     return df
 
-def preprocess_data(cfg):
-    RAW_PATH = cfg.data.raw_path
-    INTERIM_PATH = cfg.data.interim_path
-    PREPROCESS_PATH = cfg.data.processed_path
-    X_TEST_CSV = cfg.data.x_test_path
-    Y_TEST_CSV = cfg.data.y_test_path
-    df = pd.read_csv(RAW_PATH)
+def preprocess_data(cfg: DictConfig):
+    os.makedirs(os.path.dirname(cfg.data.interim_path), exist_ok=True)
+    os.makedirs(cfg.data.processed_path, exist_ok=True)
+    
+    print(f"Loading data from {cfg.data.raw_path}")
+    df = pd.read_csv(cfg.data.raw_path)
     df_fe = feature_engineering(df)
-    df_fe.to_csv(INTERIM_PATH, index=False)
+    
+    print(f"Saving interim data to {cfg.data.interim_path}")
+    df_fe.to_csv(cfg.data.interim_path, index=False)
+    
     X = df_fe.drop("Survived", axis=1)
     y = df_fe["Survived"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    X_test_df = pd.DataFrame(X_test)  
-    y_test_df = pd.DataFrame({'Survived': y_test})  
-    X_test_df.to_csv(X_TEST_CSV, index=False)
-    y_test_df.to_csv(Y_TEST_CSV, index=False)
-
+    
+    pd.DataFrame(X_test).to_csv(cfg.data.x_test_path, index=False)
+    pd.DataFrame(y_test, columns=['Survived']).to_csv(cfg.data.y_test_path, index=False)
+    
     numeric_features = ['Age', 'Fare', 'FamilySize']
-    numeric_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='median')),
-        ('scaler', StandardScaler())
-    ])
-
     categorical_features = ['Sex', 'Embarked', 'Title', 'IsAlone']
-    categorical_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='most_frequent')),
-        ('encoder', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+    
+    preprocessor = ColumnTransformer([
+        ('num', Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler())
+        ]), numeric_features),
+        ('cat', Pipeline([
+            ('imputer', SimpleImputer(strategy='most_frequent')),
+            ('encoder', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+        ]), categorical_features)
     ])
-
-    preprocessor = ColumnTransformer(transformers=[
-        ('num', numeric_transformer, numeric_features),
-        ('cat', categorical_transformer, categorical_features)
-    ])
-
+    
     X_train_processed = preprocessor.fit_transform(X_train)
-
+    
     ohe = preprocessor.named_transformers_['cat'].named_steps['encoder']
     cat_feature_names = ohe.get_feature_names_out(categorical_features)
-    processed_feature_names = np.concatenate([numeric_features, cat_feature_names])
-
-    X_train_df = pd.DataFrame(X_train_processed, columns=processed_feature_names)
-    y_train_df = pd.DataFrame({'Survived': y_train})
-    X_train_df.to_csv(f"{PREPROCESS_PATH}/X_train.csv", index=False)
-    y_train_df.to_csv(f"{PREPROCESS_PATH}/y_train.csv", index=False)
-
+    feature_names = np.concatenate([numeric_features, cat_feature_names])
+    
+    pd.DataFrame(X_train_processed, columns=feature_names).to_csv(
+        f"{cfg.data.processed_path}/X_train.csv", index=False)
+    pd.DataFrame(y_train, columns=['Survived']).to_csv(
+        f"{cfg.data.processed_path}/y_train.csv", index=False)
+    
     joblib.dump(preprocessor, cfg.data.preprocessor_pkl)
+    print("✔ Preprocessing complete")
 
-    print("Processing complete")
+@hydra.main(config_path="../conf", config_name="config", version_base="1.1")
+def main(cfg: DictConfig):
+    """Entry point for DVC pipeline"""
+    print("Starting data preprocessing...")
+    preprocess_data(cfg)
+
+if __name__ == "__main__":
+    main()
