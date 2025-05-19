@@ -8,7 +8,6 @@ from sklearn.pipeline import Pipeline
 import os
 
 def train_model(cfg: DictConfig):
-    """Main training function with model training and serialization"""
     os.makedirs(os.path.dirname(cfg.model.model_only_path), exist_ok=True)
     
     print(f"Loading training data from {cfg.data.x_train_path}")

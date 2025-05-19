@@ -29,3 +29,13 @@ evaluation:
     - precision
     - recall
     - f1
+
+mlflow:
+  tracking_uri: "https://dagshub.com/HendyaRezk/mlops-laps.mlflow"  
+  experiment_name: "default"
+
+names:
+  model_name: "BestRandomForestModel"
+
+dataset:
+  target_col: "Survived"  

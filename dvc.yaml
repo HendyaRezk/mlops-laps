@@ -22,21 +22,36 @@ stages:
       - data/processed/y_train.csv
       - data/processed/preprocessor.pkl
     outs:
-      - src/model/model_only.pkl
-      - src/model/full_pipeline_model.pkl
+      - models/model_only.pkl
+      - models/full_pipeline_model.pkl
     params:
       - config.model
+      - config.mlflow  
 
   evaluate:
     cmd: python src/evaluate.py
     wdir: .
     deps:
       - src/evaluate.py
-      - src/model/full_pipeline_model.pkl
-      - data/raw/X_test.csv
-      - data/raw/y_test.csv
+      - models/full_pipeline_model.pkl
+      - data/processed/X_test.csv
+      - data/processed/y_test.csv
     metrics:
       - reports/metrics.json:
           cache: false
     params:
       - config.evaluation
+      - config.mlflow  
+
+  register_model:
+    cmd: python src/model/tracking.py
+    wdir: .
+    deps:
+      - src/model/tracking.py
+      - models/full_pipeline_model.pkl
+      - data/processed/X_test.csv
+      - data/processed/y_test.csv
+    params:
+      - config.mlflow
+      - config.names
+      - config.dataset
