@@ -4,7 +4,10 @@ defaults:
 hydra:
   job:
     chdir: false
-
+paths:
+  models_parent_dir: src/model
+  preprocessor_pkl: src/model/full_pipeline_model.pkl
+  
 data:
   raw_path: "data/raw/train.csv"
   interim_path: "data/interim/feature_Eng_data.csv"
@@ -38,4 +41,4 @@ names:
   model_name: "BestRandomForestModel"
 
 dataset:
-  target_col: "Survived"  
+  target_col: "Survived"

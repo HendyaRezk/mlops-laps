@@ -1,4 +1,7 @@
 config:
+  paths:
+    models_parent_dir: "src/model"
+    model_file: "full_pipeline_model.pkl"
   data:
     raw_path: "data/raw/train.csv"
     interim_path: "data/interim/feature_Eng_data.csv"
